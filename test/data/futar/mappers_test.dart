@@ -87,6 +87,9 @@ void main() {
       expect(stops.first.name, 'Oktogon');
       expect(stops.first.isStation, isTrue);
       expect(stops.where((s) => !s.isStation), isNotEmpty);
+      final platform = stops.firstWhere((s) => s.id == 'BKK_F01081');
+      expect(platform.routeShortNames, ['4', '4-6', '6']);
+      expect(platform.direction, '137');
     });
 
     test('nearby_oktogon maps to stops with coordinates', () {
@@ -97,6 +100,7 @@ void main() {
         expect(s.lat, closeTo(47.505, 0.01));
         expect(s.lon, closeTo(19.064, 0.01));
       }
+      expect(stops.expand((s) => s.routeShortNames), isNotEmpty);
     });
   });
 

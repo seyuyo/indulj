@@ -52,20 +52,25 @@ DeparturesResult mapArrivals(FutarEnvelope env) {
 /// A keresés találatai az API sorrendjében.
 List<Stop> mapSearch(FutarEnvelope env) {
   final entry = SearchEntryDto.fromJson(asJsonMap(env.data['entry'], 'entry'));
-  final stops = _references(env).stops;
+  final refs = _references(env);
   return [
     for (final id in entry.stopIds)
-      if (stops[id] case final stop?) _stop(stop),
+      if (refs.stops[id] case final stop?) _stop(stop, refs.routes),
   ];
 }
 
-List<Stop> mapNearby(FutarEnvelope env) =>
-    mapList(env.data, 'list').map((j) => _stop(StopDto.fromJson(j))).toList();
+List<Stop> mapNearby(FutarEnvelope env) {
+  final routes = _references(env).routes;
+  return mapList(
+    env.data,
+    'list',
+  ).map((j) => _stop(StopDto.fromJson(j), routes)).toList();
+}
 
 ReferencesDto _references(FutarEnvelope env) =>
     ReferencesDto.fromJson(optMap(env.data, 'references'));
 
-Stop _stop(StopDto s) => Stop(
+Stop _stop(StopDto s, Map<String, RouteDto> routes) => Stop(
   id: s.id,
   name: s.name,
   lat: s.lat,
@@ -74,6 +79,9 @@ Stop _stop(StopDto s) => Stop(
   direction: s.direction,
   isStation: s.locationType == 1,
   routeIds: s.routeIds,
+  routeShortNames: {
+    for (final id in s.routeIds) ?routes[id]?.shortName,
+  }.toList(),
 );
 
 Alert _alert(AlertDto a) => Alert(

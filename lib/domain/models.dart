@@ -1,5 +1,30 @@
 // Domain-modellek. Tiszta Dart: nincs Flutter import. Minden idő UTC epoch ms.
 
+/// Kedvenc megállócsoport: több `stopId` (peron vagy állomás) együtt.
+class StopGroup {
+  const StopGroup({
+    required this.id,
+    required this.name,
+    required this.stopIds,
+    this.routeFilter,
+  });
+
+  final String id;
+  final String name;
+  final List<String> stopIds;
+
+  /// `routeId`-k; null = minden járat.
+  final Set<String>? routeFilter;
+
+  StopGroup copyWith({String? name, Set<String>? Function()? routeFilter}) =>
+      StopGroup(
+        id: id,
+        name: name ?? this.name,
+        stopIds: stopIds,
+        routeFilter: routeFilter == null ? this.routeFilter : routeFilter(),
+      );
+}
+
 class Departure {
   const Departure({
     required this.routeId,
@@ -38,6 +63,7 @@ class Stop {
     this.direction,
     this.isStation = false,
     this.routeIds = const [],
+    this.routeShortNames = const [],
   });
 
   final String id;
@@ -50,6 +76,9 @@ class Stop {
   /// Több peront összefogó „stop-area".
   final bool isStation;
   final List<String> routeIds;
+
+  /// A megállót érintő járatok rövid neve (pl. `4`, `6`), duplikátum nélkül.
+  final List<String> routeShortNames;
 }
 
 class Alert {
