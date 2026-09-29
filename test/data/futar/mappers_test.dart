@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:indulj/data/futar/dto/envelope.dart';
 import 'package:indulj/data/futar/mappers.dart';
+import 'package:indulj/data/futar/html_text.dart';
 
 FutarEnvelope _fixture(String name) => FutarEnvelope.fromJson(
   jsonDecode(File('test/fixtures/$name.json').readAsStringSync()),
@@ -214,6 +215,29 @@ void main() {
         ),
         throwsFormatException,
       );
+    });
+  });
+
+  group('htmlToText', () {
+    test('turns the real alert HTML into readable text', () {
+      final alert = mapArrivals(
+        _fixture('arrivals_oktogon_day'),
+      ).alerts['BKK_bkkinfo-149022']!;
+
+      expect(alert.description, isNot(contains('<')));
+      expect(alert.description, startsWith('• A 4-es és a 6-os villamos'));
+      expect(alert.description, contains('\nMegjegyzés:\n'));
+    });
+
+    test('handles breaks, entities and plain text', () {
+      expect(htmlToText('a<br>b<br/>c'), 'a\nb\nc');
+      expect(
+        htmlToText('<p>x &amp; y&nbsp;z</p><p>&lt;tag&gt;</p>'),
+        'x & y z\n<tag>',
+      );
+      expect(htmlToText('&amp;lt;'), '&lt;');
+      expect(htmlToText('  sima   szöveg  '), 'sima szöveg');
+      expect(htmlToText(''), '');
     });
   });
 

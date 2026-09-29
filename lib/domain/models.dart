@@ -63,7 +63,7 @@ class Stop {
     this.direction,
     this.isStation = false,
     this.routeIds = const [],
-    this.routeShortNames = const [],
+    this.routes = const [],
   });
 
   final String id;
@@ -77,8 +77,27 @@ class Stop {
   final bool isStation;
   final List<String> routeIds;
 
-  /// A megállót érintő járatok rövid neve (pl. `4`, `6`), duplikátum nélkül.
-  final List<String> routeShortNames;
+  /// A megállót érintő járatok, ha a válasz referenciái tartalmazták.
+  final List<RouteRef> routes;
+
+  /// A járatok rövid neve (pl. `4`, `6`), duplikátum nélkül.
+  List<String> get routeShortNames =>
+      {for (final r in routes) r.shortName}.toList();
+}
+
+class RouteRef {
+  const RouteRef({
+    required this.id,
+    required this.shortName,
+    required this.color,
+    required this.textColor,
+  });
+
+  final String id;
+  final String shortName;
+
+  /// ARGB.
+  final int color, textColor;
 }
 
 class Alert {

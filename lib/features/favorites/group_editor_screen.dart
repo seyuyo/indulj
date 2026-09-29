@@ -12,15 +12,20 @@ class GroupEditorScreen extends ConsumerStatefulWidget {
   GroupEditorScreen.create({super.key, required List<Stop> stops})
     : stopIds = [for (final s in stops) s.id],
       initialName = stops.first.name,
+      knownRoutes = [for (final s in stops) ...s.routes],
       existing = null;
 
   GroupEditorScreen.edit({super.key, required StopGroup group})
     : stopIds = group.stopIds,
       initialName = group.name,
+      knownRoutes = const [],
       existing = group;
 
   final List<String> stopIds;
   final String initialName;
+
+  /// A keresésből ismert járatok: akkor is választhatók, ha most nem indulnak.
+  final List<RouteRef> knownRoutes;
   final StopGroup? existing;
 
   @override
@@ -47,13 +52,22 @@ class _GroupEditorScreenState extends ConsumerState<GroupEditorScreen> {
     super.dispose();
   }
 
-  /// Egyszeri lekérés: mely járatok indulnak a kijelölt megállókról.
+  /// A megállók ismert járatai, kiegészítve egy egyszeri lekérés
+  /// eredményével (szerkesztésnél csak ez van).
   Future<void> _loadRoutes() async {
     final result = await ref
         .read(departuresRepositoryProvider)
         .fetch(widget.stopIds);
     if (!mounted) return;
-    final byId = <String, _RouteOption>{};
+    final byId = <String, _RouteOption>{
+      for (final r in widget.knownRoutes)
+        r.id: (
+          id: r.id,
+          name: r.shortName,
+          color: r.color,
+          textColor: r.textColor,
+        ),
+    };
     if (result case Ok(:final value)) {
       for (final d in value.result.departures) {
         byId[d.routeId] ??= (

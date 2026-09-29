@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -226,37 +228,52 @@ class _StopSearchScreenState extends ConsumerState<StopSearchScreen> {
           onChanged: (_) => _toggle(stop),
           title: Text(stop.name),
           subtitle: Text(stopSubtitle(stop)),
-          secondary: Icon(stop.isStation ? Icons.hub : Icons.place),
+          secondary: _StopIcon(stop),
         );
       },
     ),
   };
 }
 
-/// „Állomás · minden peron" vagy „4, 6 · ↗ ÉK".
+/// „Állomás, minden peron · M1, 4" vagy „4, 6 · ÉK irányba".
 String stopSubtitle(Stop stop) {
   final routes = stop.routeShortNames.take(8).join(', ');
   if (stop.isStation) {
     return ['Állomás, minden peron', if (routes.isNotEmpty) routes].join(' · ');
   }
   final bearing = compassLabel(stop.direction);
-  return [if (routes.isNotEmpty) routes, ?bearing].join(' · ');
+  return [
+    if (routes.isNotEmpty) routes,
+    if (bearing != null) '$bearing irányba',
+  ].join(' · ');
 }
 
 /// A Futár `direction` mezője fokban (−180…180, 0 = észak).
+double? bearingDegrees(String? direction) => double.tryParse(direction ?? '');
+
+/// Égtáj a haladási irányhoz, pl. `DK`. Nyíl-karaktert nem használunk:
+/// egyes gyártók (Samsung) emojiként rajzolják, szöveges jelzővel is.
 String? compassLabel(String? direction) {
-  final degrees = double.tryParse(direction ?? '');
+  final degrees = bearingDegrees(direction);
   if (degrees == null) return null;
-  const labels = [
-    '↑ É',
-    '↗ ÉK',
-    '→ K',
-    '↘ DK',
-    '↓ D',
-    '↙ DNy',
-    '← Ny',
-    '↖ ÉNy',
-  ];
-  final index = (((degrees % 360) + 22.5) ~/ 45) % 8;
-  return labels[index];
+  const names = ['É', 'ÉK', 'K', 'DK', 'D', 'DNy', 'Ny', 'ÉNy'];
+  return names[(((degrees % 360) + 22.5) ~/ 45) % 8];
+}
+
+/// Állomásnál csomópont-ikon, peronnál a haladási irányba forgatott nyíl.
+class _StopIcon extends StatelessWidget {
+  const _StopIcon(this.stop);
+
+  final Stop stop;
+
+  @override
+  Widget build(BuildContext context) {
+    if (stop.isStation) return const Icon(Icons.hub);
+    final degrees = bearingDegrees(stop.direction);
+    if (degrees == null) return const Icon(Icons.place);
+    return Transform.rotate(
+      angle: degrees * math.pi / 180,
+      child: const Icon(Icons.navigation),
+    );
+  }
 }

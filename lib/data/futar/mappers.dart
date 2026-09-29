@@ -3,6 +3,7 @@ import 'dto/entries_dto.dart';
 import 'dto/envelope.dart';
 import 'dto/json_read.dart';
 import 'dto/references_dto.dart';
+import 'html_text.dart';
 
 // DTO → domain leképezés. Hibás adatszerkezetnél FormatException-t dob.
 
@@ -79,15 +80,22 @@ Stop _stop(StopDto s, Map<String, RouteDto> routes) => Stop(
   direction: s.direction,
   isStation: s.locationType == 1,
   routeIds: s.routeIds,
-  routeShortNames: {
-    for (final id in s.routeIds) ?routes[id]?.shortName,
-  }.toList(),
+  routes: [
+    for (final id in s.routeIds)
+      if (routes[id] case final r?)
+        RouteRef(
+          id: r.id,
+          shortName: r.shortName ?? '?',
+          color: _argb(r.color, defaultRouteColor),
+          textColor: _argb(r.textColor, defaultRouteTextColor),
+        ),
+  ],
 );
 
 Alert _alert(AlertDto a) => Alert(
   id: a.id,
-  header: a.header?.hungarianOrAny ?? '',
-  description: a.description?.hungarianOrAny ?? '',
+  header: htmlToText(a.header?.hungarianOrAny ?? ''),
+  description: htmlToText(a.description?.hungarianOrAny ?? ''),
   startMs: a.start == null ? null : a.start! * 1000,
   endMs: a.end == null ? null : a.end! * 1000,
   routeIds: a.routeIds,
