@@ -12,3 +12,8 @@ android/local.properties
 android/**/GeneratedPluginRegistrant.*
 ios/Flutter/ephemeral/
 ios/Pods/
+
+# Helyi munkafájlok (nem mennek GitHubra)
+CLAUDE.md
+docs/SPEC.md
+.claude/
