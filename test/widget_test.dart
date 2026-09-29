@@ -26,6 +26,7 @@ Future<CountingApi> _startApp(
         futarApiClientProvider.overrideWithValue(api.client),
         clockProvider.overrideWithValue(clock),
         utcOffsetProvider.overrideWithValue(budapestOffsetMs),
+        widgetStoreProvider.overrideWithValue(FakeWidgetStore()),
       ],
       child: const InduljApp(),
     ),

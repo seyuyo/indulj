@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">Indulj – indulások</string>
+    <string name="widget_description">Egy kedvenc megállócsoport következő indulásai</string>
+</resources>

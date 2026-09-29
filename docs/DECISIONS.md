@@ -19,3 +19,7 @@
 | API-korlát helye | `DeparturesRepository`, megállókészletenként 30 mp | A képernyő időzítőjében | Egy helyen érvényesül a húzásos frissítésre és a szerkesztőre is; a hálózati hiba (nem ért el a szerverig) nem számít kérésnek |
 | Keresés | Csak beküldésre (Enter / gomb) | Gépelés közben, debounce-szal | Kevesebb API-hívás; a 30 mp-es korlát a periodikus lekérdezésre vonatkozik, a keresés egyedi felhasználói művelet |
 | Feliratfrissítés | 15 mp-enként újraszámolás hívás nélkül | Minden lekéréskor | A „3 perc" így nem avul el két lekérés között |
+| Widget ↔ csoport | A `home_widget` beépített configure-folyamata (`MainActivity` + `APPWIDGET_CONFIGURE`), párosítás a Dart prefs-ben | Saját natív configure activity | A 0.10-es csomag adja a configure-t és a `getInstalledWidgets`-et; nincs külön natív UI |
+| Megjelenítési logika Kotlinban | Csak „HH:mm" formázás, 20 perces elavultság, a már elment sorok elrejtése | Minden a Dartban | A Dart nem fut, amikor a widget rajzolódik; fél óra múlva sem mutathat múltbeli időt. Indulást nem számol, API-t nem hív |
+| Widget 30 mp-es korlát | Widgetenként `lastFetchMs` a prefs-ben | Memóriában | A háttér-isolate minden koppintásra újraindulhat |
+| Gradle-teszt | `:app:testDebugUnitTest` | `testDebugUnitTest` (minden modul) | A plugin-modulok tesztjei Windowson elhasalnak, ha a projekt és a pub cache más meghajtón van |

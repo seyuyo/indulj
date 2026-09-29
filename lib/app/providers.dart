@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,6 +11,8 @@ import '../data/futar/futar_api_client.dart';
 import '../data/location_service.dart';
 import '../domain/departure_board.dart';
 import '../features/favorites/favorites_repository.dart';
+import '../widget_bridge/widget_bridge.dart';
+import '../widget_bridge/widget_refresher.dart';
 
 /// A `main`-ben (és a tesztekben) felülírandó.
 final sharedPreferencesProvider = Provider<SharedPreferences>(
@@ -46,4 +49,22 @@ final favoritesRepositoryProvider = Provider<FavoritesRepository>(
 
 final locationServiceProvider = Provider<LocationService>(
   (ref) => const GeolocatorLocationService(),
+);
+
+final widgetStoreProvider = Provider<WidgetStore>(
+  (ref) => const HomeWidgetStore(),
+);
+
+final widgetRefresherProvider = Provider<WidgetRefresher>(
+  (ref) => WidgetRefresher(
+    api: ref.watch(futarApiClientProvider),
+    clock: ref.watch(clockProvider),
+    prefs: ref.watch(sharedPreferencesProvider),
+    store: ref.watch(widgetStoreProvider),
+  ),
+);
+
+/// A widget-configure befejezése (Androidon bezárja az Activity-t).
+final finishWidgetConfigureProvider = Provider<Future<void> Function()>(
+  (ref) => HomeWidget.finishHomeWidgetConfigure,
 );
