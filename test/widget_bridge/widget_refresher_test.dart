@@ -146,6 +146,34 @@ void main() {
     expect(store.redraws, 1);
   });
 
+  test('schedules future redraws from every widget, sorted', () async {
+    store.installed = [7, 8];
+    final r = await refresher(
+      extra: {
+        WidgetRefresher.groupKey(7): 'g1',
+        WidgetRefresher.groupKey(8): 'g1',
+      },
+    );
+    await r.refreshAll();
+
+    final now = clock.nowMs();
+    expect(store.scheduled, isNotEmpty);
+    expect(store.scheduled.every((t) => t > now), isTrue);
+    expect(store.scheduled, orderedEquals([...store.scheduled]..sort()));
+    // Két azonos csoportú widget ugyanazokat az időpontokat adja: nincs dupla.
+    expect(store.scheduled.toSet(), hasLength(store.scheduled.length));
+    expect(
+      store.scheduled.length,
+      lessThanOrEqualTo(WidgetRefresher.maxScheduledRedraws),
+    );
+    expect(
+      store.scheduled,
+      contains(
+        decodeSnapshot(store.snapshots[7]!).fetchedAtMs + 20 * 60000 + 1000,
+      ),
+    );
+  });
+
   test('a corrupt previous snapshot is ignored on error', () async {
     api.handler = (_) => http.Response('down', 503);
     final r = await refresher(extra: {WidgetRefresher.groupKey(7): 'g1'});

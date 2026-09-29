@@ -208,6 +208,33 @@ void main() {
     });
   });
 
+  group('redrawTimesMs', () {
+    test('departure, +30 s for the first rows, and the stale moment', () {
+      // normal: 4 @ 14:03, 6 @ 14:05 (szerveridő), offset −1,2 mp
+      expect(redrawTimesMs(normal), [
+        _t0 + 3 * _min + 1200,
+        _t0 + 3 * _min + 1200 + 30000,
+        _t0 + 5 * _min + 1200,
+        _t0 + 5 * _min + 1200 + 30000,
+        normal.fetchedAtMs + 20 * _min + 1000,
+      ]);
+    });
+
+    test('only the first rows, and no stale time if never fetched', () {
+      final many = buildSnapshot(
+        _group,
+        _data([for (var i = 1; i <= 6; i++) _dep('4', _t0 + i * _min)]),
+      );
+      expect(redrawTimesMs(many, rows: 2), hasLength(5));
+      final never = snapshotWithError(
+        null,
+        groupName: 'x',
+        error: WidgetError.unauthorized,
+      );
+      expect(redrawTimesMs(never), isEmpty);
+    });
+  });
+
   test('writes the shared fixtures for the Kotlin reader', () {
     final fixtures = {
       'normal': encodeSnapshot(normal),

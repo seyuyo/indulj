@@ -53,4 +53,9 @@ class FakeWidgetStore implements WidgetStore {
 
   @override
   Future<void> redraw() async => redraws++;
+
+  List<int> scheduled = const [];
+
+  @override
+  Future<void> scheduleRedraws(List<int> timesMs) async => scheduled = timesMs;
 }

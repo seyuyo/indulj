@@ -129,4 +129,31 @@ class SnapshotReaderTest {
     // 2026-09-29 22:10 UTC = 00:10 másnap
     assertEquals("00:10", WidgetDisplay.formatTime(1790719800000L, budapest))
   }
+
+  @Test
+  fun `first row counts down, then says indul, stale shows time`() {
+    val s = ready("normal") // első: 14:03 szerveridő, offset −1,2 mp
+    val first = s.departures[0]
+    // telefon 14:00:01,2 → szerver 14:00:00 → 3 perc van hátra
+    assertEquals(
+        RowTime.Countdown(3 * minute),
+        WidgetDisplay.firstRowTime(first, s, t0 + 1200),
+    )
+    assertEquals(RowTime.Departing, WidgetDisplay.firstRowTime(first, s, t0 + 3 * minute + 1200))
+    assertEquals(
+        RowTime.Departing,
+        WidgetDisplay.firstRowTime(first, s, t0 + 3 * minute + 1200 + 29_000),
+    )
+    // 20 perc után elavult: nem számol vissza
+    assertTrue(
+        WidgetDisplay.firstRowTime(first, s, s.fetchedAtMs + 21 * minute) is RowTime.Absolute)
+  }
+
+  @Test
+  fun `departures an hour or more away show the time`() {
+    val s = ready("normal")
+    val far = s.departures[0].copy(atMs = t0 + 90 * minute)
+    val time = WidgetDisplay.firstRowTime(far, s, t0 + 1200)
+    assertTrue(time is RowTime.Absolute)
+  }
 }

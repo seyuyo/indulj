@@ -15,6 +15,10 @@ abstract interface class WidgetStore {
 
   /// Újrarajzoltatja az összes widgetet.
   Future<void> redraw();
+
+  /// Ezekben a pillanatokban (UTC epoch ms) a rendszer lekérés nélkül
+  /// újrarajzolja a widgeteket; a korábbi ütemezést lecseréli.
+  Future<void> scheduleRedraws(List<int> timesMs);
 }
 
 /// Lekérés → pillanatkép → widget. Az appból és a háttér-isolate-ból is
@@ -38,6 +42,9 @@ class WidgetRefresher {
   /// A háttér-isolate nem él tovább: a 30 mp-es korlát a prefs-ben van.
   static const minInterval = Duration(seconds: 30);
 
+  /// Legfeljebb ennyi újrarajzolást ütemezünk előre.
+  static const maxScheduledRedraws = 16;
+
   static String groupKey(int widgetId) => 'widget_group_$widgetId';
   static String lastFetchKey(int widgetId) => 'widget_last_fetch_$widgetId';
 
@@ -51,15 +58,33 @@ class WidgetRefresher {
   }
 
   Future<void> refreshAll() async {
-    for (final id in await _store.installedWidgetIds()) {
+    final ids = await _store.installedWidgetIds();
+    for (final id in ids) {
       await _refreshOne(id);
     }
     await _store.redraw();
+    await _scheduleRedraws(ids);
   }
 
   Future<void> refresh(int widgetId) async {
     await _refreshOne(widgetId);
     await _store.redraw();
+    await _scheduleRedraws(await _store.installedWidgetIds());
+  }
+
+  /// Az ütemezés a widget-osztályra szól (minden példányra), ezért az összes
+  /// widget pillanatképéből gyűjtjük az időpontokat.
+  Future<void> _scheduleRedraws(List<int> ids) async {
+    final now = _clock.nowMs();
+    final times = <int>{};
+    for (final id in ids) {
+      if (await _previous(id) case final snapshot?) {
+        times.addAll(redrawTimesMs(snapshot).where((t) => t > now));
+      }
+    }
+    await _store.scheduleRedraws(
+      (times.toList()..sort()).take(maxScheduledRedraws).toList(),
+    );
   }
 
   Future<void> _refreshOne(int widgetId) async {

@@ -2,6 +2,8 @@ package hu.seyuyo.indulj.widget
 
 import android.content.Context
 import android.net.Uri
+import android.os.SystemClock
+import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
@@ -17,6 +19,7 @@ import androidx.glance.LocalSize
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.SizeMode
@@ -77,7 +80,10 @@ class DeparturesWidget : GlanceAppWidget() {
 
 @Composable
 private fun Content(context: Context, widgetId: Int, state: WidgetState, nowMs: Long) {
-  val openApp = actionStartActivity<MainActivity>(context)
+  // A Dart a widget-ID alapján nyitja meg a csoport tábláját.
+  val openApp = actionStartActivity<MainActivity>(context, Uri.parse("indulj://open?widget=$widgetId"))
+  val openAlerts =
+      actionStartActivity<MainActivity>(context, Uri.parse("indulj://alerts?widget=$widgetId"))
   val refresh = actionRunCallback<RefreshAction>(actionParametersOf(RefreshAction.WIDGET_ID to widgetId))
   val medium = LocalSize.current.height >= DeparturesWidget.MEDIUM.height
 
@@ -92,17 +98,19 @@ private fun Content(context: Context, widgetId: Int, state: WidgetState, nowMs: 
     when (state) {
       WidgetState.Missing -> Message("Betöltés…", refresh)
       WidgetState.Unsupported -> Message("Nyisd meg az appot", null)
-      is WidgetState.Ready -> Ready(state.snapshot, nowMs, medium, refresh)
+      is WidgetState.Ready -> Ready(context, state.snapshot, nowMs, medium, refresh, openAlerts)
     }
   }
 }
 
 @Composable
 private fun Ready(
+    context: Context,
     s: WidgetSnapshot,
     nowMs: Long,
     medium: Boolean,
     refresh: androidx.glance.action.Action,
+    openAlerts: androidx.glance.action.Action,
 ) {
   when (s.error) {
     "noGroup" -> return Message("Válassz csoportot az appban", null)
@@ -123,7 +131,9 @@ private fun Ready(
           style = TextStyle(fontWeight = FontWeight.Bold, color = GlanceTheme.colors.onSurface),
           modifier = GlanceModifier.defaultWeight(),
       )
-      if (s.hasAlerts) Icon(R.drawable.ic_widget_alert, GlanceTheme.colors.error)
+      if (s.hasAlerts) {
+        Icon(R.drawable.ic_widget_alert, GlanceTheme.colors.error, GlanceModifier.clickable(openAlerts))
+      }
       if (s.error != null) Icon(R.drawable.ic_widget_offline, GlanceTheme.colors.error)
       if (!medium) {
         Spacer(GlanceModifier.width(4.dp))
@@ -134,7 +144,12 @@ private fun Ready(
     if (rows.isEmpty()) {
       Text("Nincs indulás 60 percen belül", style = TextStyle(color = dim, fontSize = 13.sp))
     } else {
-      for (d in rows.take(if (medium) 4 else 1)) DepartureRow(d, stale)
+      rows.take(if (medium) 4 else 1).forEachIndexed { i, d ->
+        val time =
+            if (i == 0) WidgetDisplay.firstRowTime(d, s, nowMs)
+            else RowTime.Absolute(WidgetDisplay.formatTime(d.atMs))
+        DepartureRow(context, d, time, stale)
+      }
     }
 
     if (medium) {
@@ -157,7 +172,7 @@ private fun Ready(
 }
 
 @Composable
-private fun DepartureRow(d: WidgetDeparture, stale: Boolean) {
+private fun DepartureRow(context: Context, d: WidgetDeparture, time: RowTime, stale: Boolean) {
   val gray = Color(0xFF9E9E9E)
   Row(
       modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp),
@@ -191,12 +206,40 @@ private fun DepartureRow(d: WidgetDeparture, stale: Boolean) {
     d.delayMin?.let {
       Text("+$it ", style = TextStyle(color = GlanceTheme.colors.error, fontSize = 12.sp))
     }
-    Text(
-        WidgetDisplay.formatTime(d.atMs),
-        style = TextStyle(fontWeight = FontWeight.Bold, color = text, fontSize = 14.sp),
-    )
+    val timeStyle = TextStyle(fontWeight = FontWeight.Bold, color = text, fontSize = 14.sp)
+    when (time) {
+      is RowTime.Absolute -> Text(time.text, style = timeStyle)
+      RowTime.Departing -> Text("indul", style = timeStyle)
+      is RowTime.Countdown -> Countdown(context, time.remainingMs, text)
+    }
   }
 }
+
+/**
+ * Natív Chronometer (visszaszámláló) a Glance-be ágyazva: magától jár, a
+ * widget frissítése nélkül. Lejártakor egy ütemezett újrarajzolás „indul"-ra
+ * vált (lásd redrawTimesMs a Dart oldalon).
+ */
+@Composable
+private fun Countdown(context: Context, remainingMs: Long, color: ColorProvider) {
+  val views =
+      RemoteViews(context.packageName, R.layout.widget_countdown).apply {
+        setChronometer(R.id.countdown, SystemClock.elapsedRealtime() + remainingMs, null, true)
+        setChronometerCountDown(R.id.countdown, true)
+        setTextColor(R.id.countdown, color.getColor(context).toArgbInt())
+      }
+  // Fix szélesség: e nélkül a beágyazott nézet kiszorítja a célállomást.
+  // A 60 percen belüli „MM:SS" ebbe belefér.
+  AndroidRemoteViews(views, modifier = GlanceModifier.width(52.dp))
+}
+
+private fun Color.toArgbInt(): Int =
+    android.graphics.Color.argb(
+        (alpha * 255).toInt(),
+        (red * 255).toInt(),
+        (green * 255).toInt(),
+        (blue * 255).toInt(),
+    )
 
 @Composable
 private fun Message(text: String, refresh: androidx.glance.action.Action?) {

@@ -169,3 +169,20 @@ String _hex(int argb) =>
 
 int _parseHex(String? hex, [int fallback = 0xFF757575]) =>
     hex == null ? fallback : int.tryParse(hex, radix: 16) ?? fallback;
+
+/// Ennyi idő után „elavult" a widget (a Kotlin `WidgetDisplay` is ezt használja).
+const snapshotStaleAfterMs = 20 * 60 * 1000;
+
+/// Az indulás után ennyi ideig „indul" a felirat, utána a sor eltűnik.
+const departingGraceMs = 30 * 1000;
+
+/// Mikor kell a widgetet (lekérés nélkül) újrarajzolni, a telefon órája
+/// szerint: az első [rows] sor indulásakor („indul") és 30 mp-cel utána
+/// (a következő sor lesz az első), valamint amikor elavul.
+List<int> redrawTimesMs(WidgetSnapshot s, {int rows = 3}) => [
+  for (final d in s.departures.take(rows)) ...[
+    d.atMs - s.serverOffsetMs,
+    d.atMs - s.serverOffsetMs + departingGraceMs,
+  ],
+  if (s.fetchedAtMs > 0) s.fetchedAtMs + snapshotStaleAfterMs + 1000,
+];

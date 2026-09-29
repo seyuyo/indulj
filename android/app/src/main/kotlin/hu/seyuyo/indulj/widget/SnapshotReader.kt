@@ -88,6 +88,14 @@ object SnapshotReader {
       hex?.toLongOrNull(16)?.toInt() ?: fallback
 }
 
+sealed interface RowTime {
+  data class Countdown(val remainingMs: Long) : RowTime
+
+  data object Departing : RowTime
+
+  data class Absolute(val text: String) : RowTime
+}
+
 /** Megjelenítési szabályok; tiszta függvények, JVM-en tesztelve. */
 object WidgetDisplay {
   const val STALE_AFTER_MS = 20 * 60 * 1000L
@@ -105,6 +113,23 @@ object WidgetDisplay {
     val serverNow = nowMs + s.serverOffsetMs
     return s.departures.filter { it.atMs >= serverNow - DEPARTED_GRACE_MS }
   }
+
+  /**
+   * Az első sor ideje: 60 percen belül élő visszaszámlálás, az indulástól
+   * 30 mp-ig „indul", egyébként helyi időpont. Elavult adatnál nem számolunk
+   * vissza (a „most" már nem megbízható), csak időpontot mutatunk.
+   */
+  fun firstRowTime(d: WidgetDeparture, s: WidgetSnapshot, nowMs: Long): RowTime {
+    if (isStale(s, nowMs)) return RowTime.Absolute(formatTime(d.atMs))
+    val remaining = d.atMs - (nowMs + s.serverOffsetMs)
+    return when {
+      remaining <= 0 -> RowTime.Departing
+      remaining < COUNTDOWN_WINDOW_MS -> RowTime.Countdown(remaining)
+      else -> RowTime.Absolute(formatTime(d.atMs))
+    }
+  }
+
+  private const val COUNTDOWN_WINDOW_MS = 60 * 60 * 1000L
 
   /** UTC epoch ms → helyi „HH:mm". */
   fun formatTime(utcMs: Long, zone: TimeZone = TimeZone.getDefault()): String {

@@ -14,9 +14,16 @@ import 'board_notifier.dart';
 
 /// Élő indulási tábla: 30 mp-enként frissül, háttérben szünetel.
 class BoardScreen extends ConsumerStatefulWidget {
-  const BoardScreen({super.key, required this.groupId});
+  const BoardScreen({
+    super.key,
+    required this.groupId,
+    this.showAlertsOnLoad = false,
+  });
 
   final String groupId;
+
+  /// A widget ⚠ ikonjáról nyitva: az első betöltés után a zavarok szövege.
+  final bool showAlertsOnLoad;
 
   static const fetchInterval = Duration(seconds: 30);
 
@@ -29,6 +36,7 @@ class BoardScreen extends ConsumerStatefulWidget {
 
 class _BoardScreenState extends ConsumerState<BoardScreen> {
   late final AppLifecycleListener _lifecycle;
+  bool _alertsShown = false;
   Timer? _fetchTimer;
   Timer? _tickTimer;
 
@@ -75,6 +83,15 @@ class _BoardScreenState extends ConsumerState<BoardScreen> {
     final groups = ref.watch(favoritesProvider);
     final group = groups.where((g) => g.id == widget.groupId).firstOrNull;
     final state = ref.watch(boardProvider(widget.groupId));
+    if (widget.showAlertsOnLoad && !_alertsShown && state.snapshot != null) {
+      _alertsShown = true;
+      final alerts = activeAlerts(state.snapshot!.result);
+      if (alerts.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _showAlerts(context, alerts);
+        });
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: Text(group?.name ?? '')),
@@ -261,6 +278,47 @@ class _AlertTile extends StatelessWidget {
     );
   }
 }
+
+/// A megálló zavarai és az induló járatokéi, ismétlés nélkül.
+List<Alert> activeAlerts(DeparturesResult result) {
+  final ids = {
+    ...result.stopAlertIds,
+    for (final d in result.departures) ...d.alertIds,
+  };
+  return [for (final id in ids) ?result.alerts[id]];
+}
+
+void _showAlerts(BuildContext context, List<Alert> alerts) => showDialog<void>(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: Text(alerts.length == 1 ? alerts.single.header : 'Zavarok'),
+    content: SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final a in alerts) ...[
+            if (alerts.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: Text(
+                  a.header,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+            Text(a.description),
+          ],
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Bezár'),
+      ),
+    ],
+  ),
+);
 
 void _showAlert(BuildContext context, Alert alert) => showDialog<void>(
   context: context,

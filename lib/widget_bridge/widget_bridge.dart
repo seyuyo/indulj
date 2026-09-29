@@ -33,4 +33,11 @@ class HomeWidgetStore implements WidgetStore {
   @override
   Future<void> redraw() =>
       HomeWidget.updateWidget(qualifiedAndroidName: departuresWidgetReceiver);
+
+  @override
+  Future<void> scheduleRedraws(List<int> timesMs) =>
+      HomeWidget.scheduleWidgetUpdates([
+        for (final t in timesMs)
+          DateTime.fromMillisecondsSinceEpoch(t, isUtc: true),
+      ], qualifiedAndroidName: departuresWidgetReceiver);
 }
