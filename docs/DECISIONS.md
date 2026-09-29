@@ -12,3 +12,6 @@
 | API-verzió | `version=4` rögzítve | alapértelmezett (`2`) | A fixture-ök ezzel készültek; a mezők erre vannak tesztelve |
 | Törölt járatok | A mapper kiszűri (`canceled: true`) | Áthúzva mutatni | Widgeten nincs hely rá; a zavar-jelvény úgyis jelzi a gondot |
 | Időegység | A Futár mp-et ad, a mapper ms-re vált | ms-ben tárolni mindent az API szerint | SPEC: belül minden UTC epoch ms |
+| Helyi idő | Injektált `UtcOffsetOf` függvény; appban az eszköz zónája | `timezone` csomag + Europe/Budapest | Nincs új függőség; a tesztek saját EU-szabályú budapesti offsetet adnak, így UTC-s CI-n is determinisztikusak |
+| Járatszűrő kulcsa | `routeId` | `routeShortName` | Az ID stabil; a rövid név csak megjelenítés |
+| Lefedettség-mérés | `tool/check_coverage.dart` (lcov-parszoló) | `coverage` csomag | Függőség nélkül; a CI-ban a `lib/domain` ≥ 95% kötelező |

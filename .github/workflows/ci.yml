@@ -13,4 +13,5 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test --exclude-tags live
+      - run: flutter test --exclude-tags live --coverage
+      - run: dart run tool/check_coverage.dart lib/domain 95
