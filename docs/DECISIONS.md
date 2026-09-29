@@ -15,3 +15,7 @@
 | Helyi idő | Injektált `UtcOffsetOf` függvény; appban az eszköz zónája | `timezone` csomag + Europe/Budapest | Nincs új függőség; a tesztek saját EU-szabályú budapesti offsetet adnak, így UTC-s CI-n is determinisztikusak |
 | Járatszűrő kulcsa | `routeId` | `routeShortName` | Az ID stabil; a rövid név csak megjelenítés |
 | Lefedettség-mérés | `tool/check_coverage.dart` (lcov-parszoló) | `coverage` csomag | Függőség nélkül; a CI-ban a `lib/domain` ≥ 95% kötelező |
+| Csoport tagjai | Peron és állomás (`BKK_CS…`) is lehet | Csak peron | Élő teszt: az állomás-ID az összes peron indulását adja; a szűkítést a járatszűrő végzi |
+| API-korlát helye | `DeparturesRepository`, megállókészletenként 30 mp | A képernyő időzítőjében | Egy helyen érvényesül a húzásos frissítésre és a szerkesztőre is; a hálózati hiba (nem ért el a szerverig) nem számít kérésnek |
+| Keresés | Csak beküldésre (Enter / gomb) | Gépelés közben, debounce-szal | Kevesebb API-hívás; a 30 mp-es korlát a periodikus lekérdezésre vonatkozik, a keresés egyedi felhasználói művelet |
+| Feliratfrissítés | 15 mp-enként újraszámolás hívás nélkül | Minden lekéréskor | A „3 perc" így nem avul el két lekérés között |
