@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Az első sor élő visszaszámlálása: a Chronometer magától jár, a widgetet
-     nem kell hozzá frissíteni. A színét és az alapját kódból állítjuk. -->
+     nem kell hozzá frissíteni. A színe erőforrásból jön (nappali/éjszakai
+     változat), mert a kódból állított szín nem követi a módváltást. -->
 <Chronometer xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/countdown"
     android:layout_width="match_parent"
@@ -8,5 +9,6 @@
     android:countDown="true"
     android:gravity="end"
     android:maxLines="1"
+    android:textColor="@color/widget_countdown"
     android:textSize="14sp"
     android:textStyle="bold" />

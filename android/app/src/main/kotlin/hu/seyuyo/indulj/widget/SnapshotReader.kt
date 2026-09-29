@@ -131,6 +131,17 @@ object WidgetDisplay {
 
   private const val COUNTDOWN_WINDOW_MS = 60 * 60 * 1000L
 
+  /**
+   * Üres lista szövege. Ha csak azért nincs sor, mert mind elment (régi
+   * adat), az nem „nincs indulás", hanem „nincs friss adat".
+   */
+  fun emptyMessage(s: WidgetSnapshot, nowMs: Long): String =
+      if (s.departures.isNotEmpty() && (isStale(s, nowMs) || s.error != null)) {
+        "Nincs friss adat – koppints a ⟳-ra"
+      } else {
+        "Nincs indulás 60 percen belül"
+      }
+
   /** UTC epoch ms → helyi „HH:mm". */
   fun formatTime(utcMs: Long, zone: TimeZone = TimeZone.getDefault()): String {
     val cal = Calendar.getInstance(zone).apply { timeInMillis = utcMs }

@@ -142,7 +142,7 @@ private fun Ready(
     }
 
     if (rows.isEmpty()) {
-      Text("Nincs indulás 60 percen belül", style = TextStyle(color = dim, fontSize = 13.sp))
+      Text(WidgetDisplay.emptyMessage(s, nowMs), style = TextStyle(color = dim, fontSize = 13.sp))
     } else {
       rows.take(if (medium) 4 else 1).forEachIndexed { i, d ->
         val time =
@@ -210,7 +210,7 @@ private fun DepartureRow(context: Context, d: WidgetDeparture, time: RowTime, st
     when (time) {
       is RowTime.Absolute -> Text(time.text, style = timeStyle)
       RowTime.Departing -> Text("indul", style = timeStyle)
-      is RowTime.Countdown -> Countdown(context, time.remainingMs, text)
+      is RowTime.Countdown -> Countdown(context, time.remainingMs)
     }
   }
 }
@@ -221,25 +221,16 @@ private fun DepartureRow(context: Context, d: WidgetDeparture, time: RowTime, st
  * vált (lásd redrawTimesMs a Dart oldalon).
  */
 @Composable
-private fun Countdown(context: Context, remainingMs: Long, color: ColorProvider) {
+private fun Countdown(context: Context, remainingMs: Long) {
   val views =
       RemoteViews(context.packageName, R.layout.widget_countdown).apply {
         setChronometer(R.id.countdown, SystemClock.elapsedRealtime() + remainingMs, null, true)
         setChronometerCountDown(R.id.countdown, true)
-        setTextColor(R.id.countdown, color.getColor(context).toArgbInt())
       }
   // Fix szélesség: e nélkül a beágyazott nézet kiszorítja a célállomást.
   // A 60 percen belüli „MM:SS" ebbe belefér.
   AndroidRemoteViews(views, modifier = GlanceModifier.width(52.dp))
 }
-
-private fun Color.toArgbInt(): Int =
-    android.graphics.Color.argb(
-        (alpha * 255).toInt(),
-        (red * 255).toInt(),
-        (green * 255).toInt(),
-        (blue * 255).toInt(),
-    )
 
 @Composable
 private fun Message(text: String, refresh: androidx.glance.action.Action?) {

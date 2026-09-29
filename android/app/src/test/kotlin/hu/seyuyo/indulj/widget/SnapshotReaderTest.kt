@@ -156,4 +156,21 @@ class SnapshotReaderTest {
     val time = WidgetDisplay.firstRowTime(far, s, t0 + 1200)
     assertTrue(time is RowTime.Absolute)
   }
+
+  @Test
+  fun `empty message distinguishes no departures from old data`() {
+    val empty = ready("empty")
+    assertEquals("Nincs indulás 60 percen belül", WidgetDisplay.emptyMessage(empty, t0))
+    // Minden sor elment, és az adat elavult: nem „nincs indulás".
+    val normal = ready("normal")
+    assertEquals(
+        "Nincs friss adat – koppints a ⟳-ra",
+        WidgetDisplay.emptyMessage(normal, normal.fetchedAtMs + 25 * minute),
+    )
+    val offline = ready("error_network")
+    assertEquals(
+        "Nincs friss adat – koppints a ⟳-ra",
+        WidgetDisplay.emptyMessage(offline, offline.fetchedAtMs + 10 * minute),
+    )
+  }
 }
