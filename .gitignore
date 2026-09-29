@@ -1,1 +1,14 @@
 env.json
+.dart_tool/
+.packages
+build/
+*.iml
+.idea/
+.flutter-plugins*
+.pub-cache/
+.pub/
+android/.gradle/
+android/local.properties
+android/**/GeneratedPluginRegistrant.*
+ios/Flutter/ephemeral/
+ios/Pods/
