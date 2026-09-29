@@ -15,3 +15,12 @@ jobs:
       - run: flutter analyze
       - run: flutter test --exclude-tags live --coverage
       - run: dart run tool/check_coverage.dart lib/domain 95
+      # A codec-teszt kiírja a widget-pillanatkép mintáit; ezeknek egyezniük
+      # kell a commitolttal, mert a Kotlin teszt is ezeket olvassa.
+      - run: git diff --exit-code test/fixtures/snapshots
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: ./gradlew :app:testDebugUnitTest
+        working-directory: android

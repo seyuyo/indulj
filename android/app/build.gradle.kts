@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
+    id("org.jetbrains.kotlin.plugin.compose")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -17,6 +18,10 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     defaultConfig {
@@ -41,4 +46,13 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // A widget UI-hoz (a home_widget is ezt a verziót hozza).
+    implementation("androidx.glance:glance-appwidget:1.2.0")
+
+    testImplementation("junit:junit:4.13.2")
+    // Az android.jar org.json-ja JVM-teszten csak csonk.
+    testImplementation("org.json:json:20250517")
 }

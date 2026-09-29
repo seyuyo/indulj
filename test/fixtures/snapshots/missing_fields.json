@@ -1,0 +1,11 @@
+{
+  "v": 1,
+  "groupName": "Oktogon",
+  "fetchedAtMs": 1790683200000,
+  "departures": [
+    {
+      "route": "4",
+      "atMs": 1790683260000
+    }
+  ]
+}

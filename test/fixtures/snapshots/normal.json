@@ -1,0 +1,28 @@
+{
+  "v": 1,
+  "groupName": "Oktogon",
+  "fetchedAtMs": 1790683201200,
+  "serverOffsetMs": -1200,
+  "departures": [
+    {
+      "route": "4",
+      "bg": "FFFFD800",
+      "fg": "FF000000",
+      "headsign": "Széll Kálmán tér M",
+      "atMs": 1790683380000,
+      "realtime": true,
+      "delayMin": 2
+    },
+    {
+      "route": "6",
+      "bg": "FFFFD800",
+      "fg": "FF000000",
+      "headsign": "Újbuda-központ M",
+      "atMs": 1790683500000,
+      "realtime": false,
+      "delayMin": null
+    }
+  ],
+  "hasAlerts": false,
+  "error": null
+}

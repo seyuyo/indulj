@@ -1,0 +1,9 @@
+{
+  "v": 1,
+  "groupName": "Oktogon",
+  "fetchedAtMs": 0,
+  "serverOffsetMs": 0,
+  "departures": [],
+  "hasAlerts": false,
+  "error": "unauthorized"
+}
