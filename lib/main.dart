@@ -7,6 +7,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app/providers.dart';
+import 'features/about/about_screen.dart';
 import 'features/board/board_screen.dart';
 import 'features/favorites/favorites_notifier.dart';
 import 'features/favorites/home_screen.dart';
@@ -15,6 +16,7 @@ import 'widget_bridge/background_entry.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  registerDataLicense();
   final prefs = await SharedPreferences.getInstance();
 
   int? configureWidgetId;

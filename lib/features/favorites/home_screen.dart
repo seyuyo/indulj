@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models.dart';
+import '../about/about_screen.dart';
 import '../board/board_screen.dart';
 import '../common/error_text.dart';
 import '../stop_search/stop_search_screen.dart';
@@ -18,7 +19,18 @@ class HomeScreen extends ConsumerWidget {
     final canAdd = groups.length < maxFavoriteGroups;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Indulj')),
+      appBar: AppBar(
+        title: const Text('Indulj'),
+        actions: [
+          IconButton(
+            tooltip: 'Névjegy',
+            icon: const Icon(Icons.info_outline),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const AboutScreen()),
+            ),
+          ),
+        ],
+      ),
       body: groups.isEmpty
           ? Center(
               child: StatusMessage(
