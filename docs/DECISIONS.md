@@ -23,3 +23,4 @@
 | Megjelenítési logika Kotlinban | Csak „HH:mm" formázás, 20 perces elavultság, a már elment sorok elrejtése | Minden a Dartban | A Dart nem fut, amikor a widget rajzolódik; fél óra múlva sem mutathat múltbeli időt. Indulást nem számol, API-t nem hív |
 | Widget 30 mp-es korlát | Widgetenként `lastFetchMs` a prefs-ben | Memóriában | A háttér-isolate minden koppintásra újraindulhat |
 | Gradle-teszt | `:app:testDebugUnitTest` | `testDebugUnitTest` (minden modul) | A plugin-modulok tesztjei Windowson elhasalnak, ha a projekt és a pub cache más meghajtón van |
+| Periodikus frissítés feltétele | Hálózat nélkül is fut (`NetworkType.notRequired`) | SPEC M3.5: „csak hálózattal" | Telefonon kiderült: a widget csak frissítéskor rajzolódik újra, így hálózati feltétellel offline sosem lenne „elavult" (SPEC 8./2.), és a már elment sorok is kint maradnának. Offline a hívás hálózati hibát ad, API-kérés nem megy ki |

@@ -32,7 +32,7 @@ Future<void> onWidgetInteraction(Uri? uri) async {
   await _withRefresher((r) => id == null ? r.refreshAll() : r.refresh(id));
 }
 
-/// A WorkManager periodikus feladata (15 perc, csak hálózattal).
+/// A WorkManager periodikus feladata (15 perc).
 @pragma('vm:entry-point')
 void workmanagerDispatcher() {
   Workmanager().executeTask((task, _) async {
@@ -69,7 +69,10 @@ Future<void> registerWidgetBackgroundWork() async {
     periodicRefreshTask,
     periodicRefreshTask,
     frequency: const Duration(minutes: 15),
-    constraints: Constraints(networkType: NetworkType.connected),
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+    // Hálózat nélkül is fusson: offline a widget így újrarajzolódik, a már
+    // elment sorok eltűnnek, 20 perc után pedig „elavult" lesz (SPEC 8./2.).
+    constraints: Constraints(networkType: NetworkType.notRequired),
+    // `update`: a korábban (más feltétellel) regisztrált feladat is frissül.
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
   );
 }
