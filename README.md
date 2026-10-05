@@ -1,7 +1,8 @@
-# Indulj — BKK indulási widget
+# Indulj
 
-Android kezdőképernyő-widget és kis Flutter-app, ami 1–3 kedvenc budapesti
-megállócsoport következő indulásait mutatja a BKK FUTÁR nyílt adataiból.
+Android widget és egy kis Flutter app, ami a kedvenc budapesti megállóim
+következő indulásait mutatja a BKK FUTÁR nyílt adataiból. A cél az volt, hogy
+ne kelljen appot nyitni ahhoz, hogy lássam, mikor jön a következő járat.
 
 <p>
   <img src="docs/media/demo.gif" width="270" alt="Keresés, csoport, élő tábla, zavar">
@@ -9,137 +10,108 @@ megállócsoport következő indulásait mutatja a BKK FUTÁR nyílt adataiból.
   <img src="docs/media/widget.png" width="400" alt="A widget a kezdőképernyőn">
 </p>
 
-## Mit tud
+## Funkciók
 
-- **Widget** (Jetpack Glance, 2×1 és 4×2): színes járatjelvények, célállomás,
-  időpont, késés („+2"), zavar-jelzés. Az első sor natív visszaszámlálóval
-  jár. Koppintás a ⟳-ra: azonnali frissítés; a ⚠-ra: a zavar szövege az
-  appban.
-- **Élő indulási tábla** az appban: 30 mp-enként frissül, háttérben szünetel,
-  lehúzással is frissíthető.
-- **Megállókeresés** név és közelség alapján. Egy csoportba több peron vagy
-  egy egész állomás is kerülhet, járatszűrővel (pl. csak a 4-es és a 6-os).
-- **Offline**: az utolsó ismert állapot látszik, „elavult" jelöléssel.
-- Hibaállapotok: nincs net, érvénytelen API-kulcs, nincs indulás.
+- Widget (Jetpack Glance, 2×1 és 4×2) 1–3 megállócsoporttal: járatszám,
+  célállomás, indulási idő, késés, zavar jelzése. Az első sornál visszaszámlálás
+  fut.
+- A widgeten a ⟳ gomb azonnal frissít, a ⚠ megnyitja a zavar leírását az appban.
+- Az appban élő indulási tábla, ami 30 másodpercenként frissül, és lehúzással is
+  frissíthető.
+- Megállókeresés név vagy közelség alapján. Egy csoportba több peron vagy egy
+  egész állomás is mehet, és szűrni lehet járatra (pl. csak 4-es és 6-os).
+- Offline az utolsó adat látszik, „elavult" jelzéssel.
 
-## A legfontosabb tanulság: a widget nem valós idejű
+## Amit a widgetekről tanultam
 
-Az Android ritkán engedi frissíteni a widgeteket: az `updatePeriodMillis`
-minimuma 30 perc, a periodikus WorkManager-feladaté 15 perc, és a gyártói
-akkukímélők ezt is megnyirbálhatják. Egy „3 perc múlva" felirat így fél óra
-múlva is ott állna, tévesen. Ezért:
+Azt hittem, a widget majd percenként frissül, de az Android ezt nem engedi: az
+`updatePeriodMillis` minimum 30 perc, a periodikus WorkManager 15 perc, és a
+gyártók akkukímélője ezt is elnyomhatja. Ha a widget azt írná, hogy „3 perc
+múlva", az fél óra múlva is ott lenne, és hazudna.
 
-- **Abszolút időpontot mutatunk** („14:37"). Ez legfeljebb elavul, de nem
-  válik hamissá. Relatív idő csak az első sorban van, egy natív `Chronometer`
-  számol vissza, ami a widget frissítése nélkül is jár.
-- **A frissesség látszik**: „frissítve 14:21". 20 perc után szürke, „elavult".
-- **Akkor frissítünk, amikor számít**: koppintásra, az app megnyitásakor, és
-  tartalékként 15 percenként a háttérben.
-- A widget két frissítés között „befagy". Az indulások pillanatában és 30 mp-cel
-  utána ütemezett újrarajzolás (AlarmManager, API-hívás nélkül) váltja az első
-  sort „indul"-ra, majd a következőre.
+Ezért végül így oldottam meg:
 
-## Architektúra
+- A widget pontos időt mutat („14:37"), mert az legfeljebb elavul, de nem lesz
+  hamis. Csak az első sorban van visszaszámlálás, azt egy natív `Chronometer`
+  számolja, ami frissítés nélkül is megy.
+- Ki van írva, mikor frissült, és 20 perc után elszürkül.
+- Frissítés koppintásra, az app megnyitásakor, és 15 percenként a háttérben.
+- Az indulások idejére be van ütemezve egy újrarajzolás (AlarmManager, API-hívás
+  nélkül), így az elment járat eltűnik a listából.
+
+## Felépítés
+
+Az API-hívás és a feldolgozás csak a Dart oldalon van. A Dart egy JSON
+pillanatképet ír a widget SharedPreferences-ébe, a Kotlin widget pedig csak
+megjeleníti. Így csak egy parserem van, és azt Dartban tudom tesztelni.
 
 ```mermaid
 flowchart LR
-  subgraph Dart
-    UI["App UI (Riverpod)"] --> Repo["DeparturesRepository<br/>30 mp-es korlát"]
-    BG["Háttér-belépési pont<br/>WorkManager / widget-koppintás"] --> Refresher["WidgetRefresher"]
-    Refresher --> Repo
-    Repo --> Api["FutarApiClient"]
-    UI --> Board["departure_board.dart<br/>tiszta függvények"]
-    Refresher --> Board
-    Refresher --> Store["WidgetStore<br/>home_widget"]
-  end
-  Store -->|"verziózott JSON-pillanatkép"| Prefs[("Widget SharedPreferences")]
-  Prefs --> Glance["Glance widget (Kotlin)<br/>csak megjelenít"]
-  Glance -->|"⟳: frissítés"| BG
-  Glance -->|"⚠ / törzs: megnyitás"| UI
+  UI["App (Riverpod)"] --> Repo["DeparturesRepository"]
+  BG["Háttérfeladat / widget-koppintás"] --> Refresher["WidgetRefresher"]
+  Refresher --> Repo
+  Repo --> Api["FutarApiClient"]
+  Refresher --> Prefs[("pillanatkép JSON")]
+  Prefs --> Glance["Glance widget (Kotlin)"]
 ```
 
-- **Egyetlen parser, Dartban.** A Kotlin oldal nem hív API-t és nem számol
-  indulást. Kész pillanatképet jelenít meg, és csak a megjelenítéshez szükséges
-  dolgokat végzi (időformázás, elavultság, elment sorok elrejtése).
-- **A pillanatkép sémája verziózott** (`"v": 1`). Ismeretlen verziónál a widget
-  „Nyisd meg az appot" állapotot mutat, nem omlik össze. A két oldal
-  szerződését ugyanaz a fájlkészlet védi: a Dart codec-teszt írja
-  (`test/fixtures/snapshots/`), a Kotlin `SnapshotReaderTest` olvassa.
-- **Idő**: belül minden UTC epoch ms; helyi időre csak a megjelenítésnél
-  váltunk. A tesztek a márciusi és az októberi óraátállítást és az éjfél utáni
-  indulásokat is lefedik, gépfüggetlen budapesti időzónával.
-- **Fixture-alapú API-modell**: a mezőneveket valódi, rögzített válaszokból
-  vettük (`tool/record_fixture.dart`), nem a specből találgatva.
-
-A döntések és indokaik: [docs/DECISIONS.md](docs/DECISIONS.md).
+A pillanatképben van egy verziószám, és a Dart és a Kotlin oldal ugyanazokat a
+teszt fixture-öket használja (`test/fixtures/snapshots/`), hogy ne csússzon szét
+a kettő. Belül minden időt UTC ms-ben tárolok, helyi időre csak kiíráskor
+váltok, és a tesztek az óraátállítást és az éjfél utáni indulásokat is lefedik.
 
 ```
 lib/
-  core/            env, óra, Result
-  data/futar/      API-kliens, DTO-k, mapperek
-  domain/          modellek, departure_board.dart (tiszta Dart)
-  widget_bridge/   pillanatkép-codec, WidgetRefresher, háttér-belépési pontok
-  features/        stop_search, favorites, board, widget_config, about
-android/app/src/main/kotlin/hu/seyuyo/indulj/widget/
-                   Glance widget, SnapshotReader
-tool/              record_fixture.dart, check_coverage.dart
+  core/            env, óra
+  data/futar/      API-kliens, DTO-k
+  domain/          modellek, indulási tábla logikája
+  widget_bridge/   pillanatkép, widget frissítése
+  features/        keresés, kedvencek, tábla, widget beállítás, névjegy
+android/.../widget/  Glance widget, SnapshotReader
+tool/              fixture rögzítő, lefedettség-ellenőrzés
 ```
+
+A döntéseimet a [docs/DECISIONS.md](docs/DECISIONS.md)-ben gyűjtöttem.
 
 ## Futtatás
 
-1. Regisztrálj és kérj kulcsot: https://opendata.bkk.hu
-2. `cp env.example.json env.json`, és írd bele a kulcsot (`FUTAR_API_KEY`).
-   Az `env.json` gitignore-ban van.
-3. Futtatás:
+1. Kell egy API-kulcs: https://opendata.bkk.hu
+2. Másold le az `env.example.json`-t `env.json` néven, és írd bele a kulcsot.
+   (Az `env.json` benne van a gitignore-ban.)
+3. ```sh
+   flutter pub get
+   flutter run --dart-define-from-file=env.json
+   ```
 
-```sh
-flutter pub get
-flutter run --dart-define-from-file=env.json
-```
-
-A widget felrakásakor megnyílik az app, és kiválaszthatod, melyik csoportot
-mutassa.
-
-### Tesztek
+Tesztek:
 
 ```sh
 flutter analyze
-flutter test                                              # élő tesztek nélkül
-flutter test --tags live --dart-define-from-file=env.json # élő smoke-teszt
-dart run tool/check_coverage.dart lib/domain 95           # flutter test --coverage után
-cd android && ./gradlew :app:testDebugUnitTest            # Kotlin JVM-tesztek
+flutter test
+flutter test --tags live --dart-define-from-file=env.json   # valódi API-val
+cd android && ./gradlew :app:testDebugUnitTest              # Kotlin tesztek
 ```
 
-Új fixture rögzítése (a kulcsot a mentett fájlból eltávolítja):
+Új fixture rögzítése valódi API-ból (a kulcsot kiveszi a fájlból):
 
 ```sh
 dart run tool/record_fixture.dart arrivals <név> <stopId...>
-dart run tool/record_fixture.dart search <név> <keresőszó>
-dart run tool/record_fixture.dart nearby <név> <lat> <lon>
 ```
 
-## Az API-kulcs kompromisszuma
+## Ismert korlátok
 
-A kulcs fordítási idejű konstans (`--dart-define-from-file`). Így a widget
-háttér-isolate-jában is elérhető, és soha nem kerül a repóba, logba vagy
-fixture-be. **Az APK-ból viszont kinyerhető.** Személyes vagy portfólió-appnál
-ez elfogadott kompromisszum. Éles apphoz saját proxy-szerver kellene, ami a
-kulcsot tartja; ez nincs a projekt céljai között.
+- Az API-kulcs fordításkor kerül az appba, így az APK-ból ki lehet szedni. Egy
+  saját használatú appnál ez szerintem oké, egy rendes kiadáshoz viszont kellene
+  egy proxy szerver.
+- Egyes telefonokon (Samsung, Xiaomi) az akkukímélő megállíthatja a háttér
+  frissítést. Ilyenkor érdemes az app akkubeállítását „Nem korlátozott"-ra
+  állítani, gyártónként itt van leírás: https://dontkillmyapp.com
+- Az app 30 másodpercnél sűrűbben nem kérdezi le ugyanazt, mert a BKK ezt kéri.
 
-## Akkukímélők
+## Licenc és adatforrás
 
-Egyes gyártók (Samsung, Xiaomi stb.) elnyomhatják a háttérfrissítést. A fő
-frissítési út ezért a koppintás. Ha a widget nem frissül magától, az Indulj
-akkubeállítását érdemes „Nem korlátozott"-ra állítani; gyártónként:
-https://dontkillmyapp.com
+A kód [MIT](LICENSE) licencű.
 
-Az app 30 másodpercnél gyakrabban soha nem kérdezi az API-t (a BKK kérése
-szerint).
-
-## Adatforrás és licenc
-
-Adatforrás: **BKK Zrt. – BKK FUTÁR** (https://opendata.bkk.hu), a
+Az adatok forrása a BKK Zrt. – BKK FUTÁR (https://opendata.bkk.hu),
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) licenc alatt. Az app
-az adatokat szűri, rendezi és átalakítja; a BKK nem támogatja és nem hagyta
-jóvá az appot. A forrásmegjelölés az app Névjegy oldalán és licenclistájában
-is szerepel.
+szűri és átalakítja az adatokat. Az appot a BKK nem támogatja és nem hagyta jóvá.
